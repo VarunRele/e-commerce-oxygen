@@ -9,12 +9,14 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    product_id = serializers.IntegerField(source='id', read_only=True)
     class Meta:
         model = Product
         fields = [
-            "id",
+            "product_id",
             "title",
             "description",
             "price",
             "images"
         ]
+        read_only_fields = ["title", "description", "price", "images"]
