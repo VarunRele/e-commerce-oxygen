@@ -17,3 +17,7 @@ class CartListAPIView(generics.ListAPIView):
     serializer_class = CartSerializer
     authentication_classes = [authentication.SessionAuthentication, JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Cart.objects.filter(owner=user)
