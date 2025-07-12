@@ -32,7 +32,7 @@ class Order(models.Model):
         return f"{self.user.username} order"
 
     @property
-    def total_price(self):
+    def total_price(self) -> float:
         return sum(item.price * item.quantity for item in self.items.all())
 
 
