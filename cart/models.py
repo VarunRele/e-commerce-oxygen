@@ -16,3 +16,6 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.title}"
+
+    class Meta:
+        unique_together = ('cart', 'product')

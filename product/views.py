@@ -23,5 +23,4 @@ class ProductListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        print(serializer)
         serializer.save()
