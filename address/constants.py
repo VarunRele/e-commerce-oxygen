@@ -1,0 +1,2 @@
+ADDRESS_SHIPPING = 'shipping'
+ADDRESS_BILLING = 'billing'

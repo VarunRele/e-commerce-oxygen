@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from product.models import Product
 from .constants import *
+from address.models import Address
 
 
 PAYMENT_STATUS_CHOICES = [
@@ -20,6 +21,8 @@ DELIVERY_STATUS_CHOICES = [
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    shipping_address = models.ForeignKey(Address, on_delete=models.PROTECT, related_name='shipping_address', null=True)
+    billing_address = models.ForeignKey(Address, on_delete=models.PROTECT, related_name='billing_addres', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_PENDING)
     delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default=DELIVERY_PROCESSING)
