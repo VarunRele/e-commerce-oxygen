@@ -1,0 +1,8 @@
+PAYMENT_PENDING = 'pending'
+PAYMENT_PAID = 'paid'
+PAYMENT_FAILED = 'failed'
+
+DELIVERY_PROCESSING = 'processing'
+DELIVERY_SHIPPED = 'shipped'
+DELIVERY_DELIVERED = 'delivered'
+DELIVERY_CANCELLED = 'cancelled'

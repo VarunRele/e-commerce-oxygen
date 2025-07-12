@@ -1,12 +1,36 @@
 from django.db import models
 from django.contrib.auth.models import User
 from product.models import Product
+from .constants import *
 
+
+PAYMENT_STATUS_CHOICES = [
+    (PAYMENT_PENDING, 'Pending'),
+    (PAYMENT_PAID, 'Paid'),
+    (PAYMENT_FAILED, 'Failed'),
+]
+
+
+DELIVERY_STATUS_CHOICES = [
+    (DELIVERY_PROCESSING, 'Processing'),
+    (DELIVERY_SHIPPED, 'Shipped'),
+    (DELIVERY_DELIVERED, 'Delivered'),
+    (DELIVERY_CANCELLED, 'Cancelled'),
+]
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, default='pending')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_PENDING)
+    delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default=DELIVERY_PROCESSING)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} order"
+
+    @property
+    def total_price(self):
+        return sum(item.price * item.quantity for item in self.items.all())
 
 
 class OrderItem(models.Model):
