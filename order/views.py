@@ -1,14 +1,19 @@
 from django.shortcuts import render, get_object_or_404
+import razorpay.errors
 from rest_framework import status
 from .models import Order, OrderItem
 from cart.models import Cart, CartItem
 from .serializers import OrderSerializer
 from rest_framework import generics, permissions, authentication
 from rest_framework.views import APIView
+from rest_framework.request import Request
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from .permission import IsOwnerOrAdmin
 from .constants import *
+import razorpay
+from django.conf import settings
+
 
 class OrderCreateAPIView(generics.ListCreateAPIView):
     queryset = Order.objects.all()
@@ -67,3 +72,59 @@ class CancelOrderAPIView(APIView):
         order.delivery_status = DELIVERY_CANCELLED
         order.save()
         return Response({"detail": "Order cancelled"}, status=status.HTTP_200_OK)
+
+
+
+class CreateRazorPayOrderAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request, pk: int):
+        user = request.user
+        order = get_object_or_404(Order, pk=pk, user=user)
+
+        if order.payment_status != PAYMENT_PENDING:
+            return Response({"detail": "Payment already processed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET))
+        amount = int(order.total_price) * 100
+        razorpay_order = client.order.create(data = {
+            "amount": amount,
+            "currency": "INR",
+            "payment_capture": 1
+        })
+        order.razorpay_order_id = razorpay_order['id']
+        order.save()
+        return Response({
+            "razorpay_order_id": razorpay_order['id'],
+            "amount": amount,
+            "key_id": settings.RAZORPAY_API_KEY
+        })
+
+
+class VerifyRazorPayPaymentAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request: Request):
+        user = request.user
+        data = request.data
+
+        order = get_object_or_404(Order, razorpay_order_id=data['razorpay_order_id'])
+        client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET))
+
+        try:
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': data['razorpay_order_id'],
+                'razorpay_payment_id': data['razorpay_payment_id'],
+                'razorpay_signature': data['razorpay_signature']
+            })
+        except razorpay.errors.SignatureVerificationError:
+            return Response({"detail": "Signature verification failed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.razorpay_payment_id = data['razorpay_payment_id']
+        order.razorpay_signature = data['razorpay_signature']
+        order.payment_status = PAYMENT_PAID
+        order.save()
+
+        return Response({"detail": "Payment verified and order complete"}, status=status.HTTP_200_OK)

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Test</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <input type="text" id="token" placeholder="Enter Bearer Token" size="60">
+    <br><br>
+    <h2>Pay with Razorpay</h2>
+    <button id="pay-button">Pay Now</button>
+
+    <script>
+    document.getElementById('pay-button').onclick = function () {
+        const token = document.getElementById('token').value;
+        if (!token) {
+            alert("Please enter your Bearer token");
+            return;
+        }
+      fetch('http://127.0.0.1:8000/api/order/payment/4/', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+      })  // Replace with your actual endpoint
+        .then(response => response.json())
+        .then(data => {
+          var options = {
+            key: data.key_id, // Provided by your backend
+            amount: data.amount,    // Amount in paisa
+            currency: "INR",
+            name: "Your Company Name",
+            description: "Test Transaction",
+            image: "https://yourdomain.com/logo.png", // optional
+            order_id: data.razorpay_order_id, // From backend
+            callback_url: 'http://127.0.0.1:8000/api/order/payment/verify/',
+            method: {
+                upi: true
+            }
+          };
+
+          var rzp1 = new Razorpay(options);
+          rzp1.open();
+        })
+        .catch(err => {
+          alert("Failed to create payment order");
+          console.error(err);
+        });
+    };
+  </script>
+</body>
+</html>
