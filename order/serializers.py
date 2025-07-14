@@ -16,7 +16,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['order_id', 'user', 'shipping_address', 'billing_address', 'created_at', 'payment_status', 'delivery_status', 'items', 'total_price']
-        read_only_fields = ['created_at']
+        read_only_fields = ['user', 'created_at']
 
     def validate_shipping_address(self, value):
         if value.user != self.context['request'].user:
