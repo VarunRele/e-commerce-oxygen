@@ -28,7 +28,7 @@ class CartViewTest(TestCase):
         self.client = APIClient()
         self.client.login(username='testuser', password='pass')
         self.cart, created = Cart.objects.get_or_create(owner=self.user)
-
+    
     def test_cart_list_authenticated(self):
         response = self.client.get('/api/cart/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -39,21 +39,26 @@ class CartViewTest(TestCase):
 
     def test_increment_cart_item(self):
         cart_item = CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
-        response = self.client.put(f'/api/cart/increment/{cart_item.id}/')
+        response = self.client.post(f'/api/cart/increment/{cart_item.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         cart_item.refresh_from_db()
         self.assertEqual(cart_item.quantity, 2)
 
     def test_decrement_cart_item(self):
         cart_item = CartItem.objects.create(cart=self.cart, product=self.product, quantity=2)
-        response = self.client.put(f'/api/cart/decrement/{cart_item.id}/')
+        response = self.client.post(f'/api/cart/decrement/{cart_item.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         cart_item.refresh_from_db()
         self.assertEqual(cart_item.quantity, 1)
 
     def test_decrement_cart_item_to_zero(self):
         cart_item = CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
-        response = self.client.put(f'/api/cart/decrement/{cart_item.id}/')
+        response = self.client.post(f'/api/cart/decrement/{cart_item.id}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         with self.assertRaises(ObjectDoesNotExist):
             cart_item.refresh_from_db()
+    
+    def test_delete_cart_item(self):
+        cart_item = CartItem.objects.create(cart=self.cart, product=self.product, quantity=2)
+        response = self.client.delete(f'/api/cart/delete/{cart_item.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

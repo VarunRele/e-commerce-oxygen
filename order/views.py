@@ -1,9 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import status
 from .models import Order, OrderItem
 from cart.models import Cart, CartItem
 from .serializers import OrderSerializer
 from rest_framework import generics, permissions, authentication
+from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from .permission import IsOwnerOrAdmin
@@ -49,17 +50,20 @@ class OrderRetrieveAPIView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
 
 
-class CancelOrderAPIView(generics.RetrieveUpdateAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
+class CancelOrderAPIView(APIView):
+    """
+    Cancel an order with a given ID, only if it's in PROCESSING or SHIPPED state.
+    """
     authentication_classes = [authentication.SessionAuthentication, JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
 
-    def update(self, request, *args, **kwargs):
-        order = self.get_object()
+    def post(self, request, pk):
+        order = get_object_or_404(Order, pk=pk)
+        self.check_object_permissions(request, order)
+
         if order.delivery_status not in [DELIVERY_PROCESSING, DELIVERY_SHIPPED]:
             return Response({"detail": "Cannot cancel this order"}, status=status.HTTP_400_BAD_REQUEST)
+
         order.delivery_status = DELIVERY_CANCELLED
         order.save()
-        return Response({"detail": "Order cancel"}, status=status.HTTP_200_OK)
-
+        return Response({"detail": "Order cancelled"}, status=status.HTTP_200_OK)
